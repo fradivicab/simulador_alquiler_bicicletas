@@ -11,7 +11,7 @@ let bicicletas = [
 // 2. Función para renderizar las bicicletas en el HTML
 function mostrarDisponibles() {
     const contenedor = document.getElementById('contenedor-bicicletas');
-    contenedor.innerHTML = ""; // Limpiamos el contenedor antes de dibujar
+    contenedor.innerHTML = ""; // Limpiamos el contenedor
 
     bicicletas.forEach(bici => {
         // Creamos el HTML para cada tarjeta
