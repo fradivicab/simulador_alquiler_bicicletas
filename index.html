@@ -5,65 +5,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BiciGuata - Alquiler de Bicicletas</title>
+
+    <!--Usamos el framework tailwind-->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!--Exportamos emoticones de googleapis-->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
+        body { font-family: 'Poppins', sans-serif; }
     </style>
+    <link rel="stylesheet" href="css/style.css">
+    <!--importamos nuestro archivo JS-->
+    <script src="js/app.js" defer></script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
 
+<!--Header-->
     <nav class="bg-white shadow-md p-4 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-indigo-600">🚲 BiciGuata</h1>
-            <div class="space-x-4">
-                <a href="#catalogo" class="hover:text-indigo-500">Catálogo</a>
-                <a href="#devolucion" class="hover:text-indigo-500">Devoluciones</a>
-            </div>
+            <h1 class="text-2xl font-bold text-indigo-600">BiciGuata</h1>
+            <div id="notificacion" class="hidden text-sm font-semibold px-4 py-2 rounded-full"></div>
         </div>
     </nav>
 
     <header class="relative h-[65vh] flex items-center justify-center text-white">
         <img src="https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&q=80&w=1200"
-            alt="Hero Bike" class="absolute inset-0 w-full h-full object-cover object-center brightness-50 transition-transform duration-700 hover:scale-105">
+            alt="Hero Bike" class="absolute inset-0 w-full h-full object-cover object-center brightness-50">
         <div class="relative text-center px-4">
             <h2 class="text-4xl md:text-5xl font-extrabold mb-4">Explora la ciudad sobre ruedas</h2>
-            <p class="text-lg">Alquiler sencillo, rápido y al mejor precio: **$2000 / hora**.</p>
+            <p class="text-lg">Precio fijo por hora: <span class="font-bold text-indigo-300">$2000</span></p>
         </div>
     </header>
+
+    <!--Body-->
 
     <main class="container mx-auto py-12 px-4">
 
         <section id="catalogo" class="mb-16">
-            <div class="flex justify-between items-end mb-8">
-                <div>
-                    <h3 class="text-3xl font-bold text-gray-900">Nuestras Bicicletas</h3>
-                    <p class="text-gray-600">Elige la que mejor se adapte a tu aventura.</p>
-                </div>
-                <button onclick="mostrarDisponibles()"
-                    class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
-                    Refrescar Disponibilidad
-                </button>
-            </div>
-
+            <h3 class="text-3xl font-bold text-gray-900 mb-8">Nuestras Bicicletas</h3>
             <div id="contenedor-bicicletas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div
-                    class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition hover:scale-105">
-                    <img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400"
-                        alt="Bici" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <span
-                            class="text-xs font-semibold uppercase px-2 py-1 bg-green-100 text-green-700 rounded-full">Disponible</span>
-                        <h4 class="text-xl font-bold mt-2">Mountain Bike</h4>
-                        <p class="text-sm text-gray-500 mb-4">ID: #1</p>
-                        <button class="w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-black">Alquilar
-                            Ahora</button>
-                    </div>
                 </div>
-            </div>
         </section>
 
         <hr class="my-12">
@@ -73,33 +55,72 @@
             <form id="form-devolucion" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">ID de la Bicicleta</label>
-                    <input type="number" id="id-devolucion"
-                        class="w-full mt-1 p-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Ej: 1">
+                    <input type="number" id="id-devolucion" class="w-full mt-1 p-3 border rounded-lg" placeholder="Ej: 1">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Horas de uso</label>
-                    <input type="number" id="horas-uso"
-                        class="w-full mt-1 p-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="¿Cuántas horas la tuviste?">
+                    <input type="number" id="horas-uso" class="w-full mt-1 p-3 border rounded-lg" placeholder="¿Cuántas horas?">
                 </div>
-                <button type="button" onclick="devolverBicicleta()"
-                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">
+                <button type="submit" id="btn-procesar-devolucion" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">
                     Calcular Total y Devolver
                 </button>
             </form>
-            <div id="resultado-pago"
-                class="mt-6 hidden p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-center font-semibold">
+            <div id="resultado-pago" class="mt-6 hidden p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-center font-semibold">
             </div>
         </section>
 
+        <hr class="my-12">
+
+        <section class="mb-12 bg-white p-6 rounded-xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h4 class="text-lg font-bold text-gray-700">Resumen de Alquileres</h4>
+                <p class="text-gray-500 text-sm">Cálculo histórico de ingresos.</p>
+            </div>
+            <div class="text-right">
+                <p id="total-ingresos" class="text-3xl font-black text-indigo-600">$0</p>
+                <button id="btn-limpiar-storage" class="text-xs text-red-500 underline hover:text-red-700">Reiniciar calculo de ingresos</button>
+            </div>
+        </section>
+
+    <!-- Nuevas fuincionalidades que buscare implementar en las siguientes entregas-->
+    <section class="container mx-auto py-12 px-4">
+    <div class="bg-indigo-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-indigo-500 rounded-full opacity-20"></div>
+        
+        <div class="relative z-10">
+            <h3 class="text-3xl font-bold mb-2">Próximamente en BiciGuata 🚀</h3>
+            <p class="text-indigo-200 mb-8">Estamos trabajando para mejorar tu experiencia. Muy pronto podrás disfrutar de:</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
+                    <div class="text-2xl mb-3">📍</div>
+                    <h4 class="font-bold mb-2">Multisector</h4>
+                    <p class="text-sm text-indigo-100">Nuevos puntos de entrega y devolución en toda la ciudad para mayor comodidad.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
+                    <div class="text-2xl mb-3">📋</div>
+                    <h4 class="font-bold mb-2">Registro de Usuario</h4>
+                    <p class="text-sm text-indigo-100">Formulario inteligente para validación de identidad de los usuarios.</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
+                    <div class="text-2xl mb-3">⭐</div>
+                    <h4 class="font-bold mb-2">Sistema de Puntos</h4>
+                    <p class="text-sm text-indigo-100">Gana "BiciPuntos" por cada kilómetro recorrido y canjéalos por horas gratis.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
     </main>
+
+    <!--Footer-->
 
     <footer class="bg-gray-900 text-gray-400 py-8 text-center mt-12">
         <p>&copy; 2026 BiciGuata Simulator. Proyecto de FranciscoDDV JS.</p>
     </footer>
 
-    <script src="js/app.js"></script>
 </body>
-
 </html>

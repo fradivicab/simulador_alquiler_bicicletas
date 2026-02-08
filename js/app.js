@@ -1,88 +1,139 @@
-// 1. Datos iniciales
-const PRECIO_POR_HORA = 2000;
+// 1. CONSTANTES Y DATOS INICIALES
+const PRECIO_HORA = 2000;
 
-let bicicletas = [
+const bicisIniciales = [
     { id: 1, modelo: "Mountain Bike", disponible: true, img: "assets/img/bici-mountain.webp" },
     { id: 2, modelo: "Urbana", disponible: true, img: "assets/img/bici-urbana.webp" },
     { id: 3, modelo: "Eléctrica", disponible: true, img: "assets/img/bici-electrica.webp" },
     { id: 4, modelo: "Doble", disponible: true, img: "assets/img/bici-doble.webp" }
 ];
 
-// 2. Función para renderizar las bicicletas en el HTML
-function mostrarDisponibles() {
-    const contenedor = document.getElementById('contenedor-bicicletas');
-    contenedor.innerHTML = ""; // Limpiamos el contenedor
+// 2. RECUPERAR DE LOCALSTORAGE
+let bicicletas = JSON.parse(localStorage.getItem("bicicletas_storage")) || bicisIniciales;
+let historialVentas = JSON.parse(localStorage.getItem("ventas_storage")) || [];
 
-    bicicletas.forEach(bici => {
-        // Creamos el HTML para cada tarjeta
-        const card = document.createElement('div');
-        card.className = "bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition hover:scale-105";
+// elementos
+const contenedor = document.getElementById('contenedor-bicicletas');
+const formulario = document.getElementById('form-devolucion');
+const textoResultado = document.getElementById('resultado-pago');
+const displayIngresos = document.getElementById('total-ingresos');
+const btnReset = document.getElementById('btn-limpiar-storage');
+
+// 3. FUNCIONES
+
+// crear el catálogo
+function renderizarBicicletas() {
+    contenedor.innerHTML = ""; 
+
+    bicicletas.forEach((bici) => {
         
-        card.innerHTML = `
-            <img src="${bici.img}" alt="${bici.modelo}" class="w-full h-48 object-cover">
+        let claseBadge;
+        let textoEstado;
+        let claseBoton;
+        let textoBoton;
+
+        if (bici.disponible) {
+            claseBadge = 'disponible';
+            textoEstado = 'Disponible';
+            claseBoton = 'btn-alquilar-activo';
+            textoBoton = 'Alquilar Ahora';
+        } else {
+            claseBadge = 'alquilada';
+            textoEstado = 'Alquilada';
+            claseBoton = 'btn-deshabilitado';
+            textoBoton = 'No Disponible';
+        }
+
+        //aqui nos apoyamos en las clases de tailwind para crear tarjetas
+        const tarjeta = document.createElement('div');
+        tarjeta.className = "card-bici";
+        
+        tarjeta.innerHTML = `
+            <img src="${bici.img}" class="card-img">
             <div class="p-5">
-                <span class="text-xs font-semibold uppercase px-2 py-1 ${bici.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-full">
-                    ${bici.disponible ? 'Disponible' : 'Alquilada'}
-                </span>
+                <span class="badge ${claseBadge}">${textoEstado}</span>
                 <h4 class="text-xl font-bold mt-2">${bici.modelo}</h4>
                 <p class="text-sm text-gray-500 mb-4">ID: #${bici.id}</p>
                 <button 
-                    onclick="alquilarBicicleta(${bici.id})" 
-                    ${!bici.disponible ? 'disabled' : ''}
-                    class="w-full ${bici.disponible ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-400 cursor-not-allowed'} text-white py-2 rounded-lg transition font-semibold">
-                    ${bici.disponible ? 'Alquilar Ahora' : 'No Disponible'}
+                    class="btn-base ${claseBoton} btn-alquilar" 
+                    data-id="${bici.id}" 
+                    ${!bici.disponible ? 'disabled' : ''}>
+                    ${textoBoton}
                 </button>
             </div>
         `;
-        contenedor.appendChild(card);
+        contenedor.appendChild(tarjeta);
+    });
+
+    asignarEventosBotones();
+    actualizarTotalRecaudado();
+}
+
+// Función para darle el evento de click a los botones de alquiler
+function asignarEventosBotones() {
+    const botonesAlquilar = document.querySelectorAll('.btn-alquilar');
+    botonesAlquilar.forEach(boton => {
+        boton.addEventListener('click', (e) => {
+            const idSeleccionado = parseInt(e.target.getAttribute('data-id'));
+            alquilarBici(idSeleccionado);
+        });
     });
 }
 
-// 3. Función para alquilar
-function alquilarBicicleta(id) {
-    let bici = bicicletas.find(b => b.id === id);
-
-    if (bici && bici.disponible) {
-        bici.disponible = false;
-        alert(`¡Genial! Has alquilado la ${bici.modelo}.`);
-        mostrarDisponibles(); // Refrescamos la interfaz
+function alquilarBici(id) {
+    const biciEncontrada = bicicletas.find(b => b.id === id);
+    
+    if (biciEncontrada && biciEncontrada.disponible) {
+        biciEncontrada.disponible = false;
+        guardarEnStorage();
+        renderizarBicicletas(); // Volvemos a dibujar para que cambie el color de los labelcitos
     }
 }
 
-// 4. Función para devolver y calcular pago
-function devolverBicicleta() {
-    const idInput = document.getElementById('id-devolucion').value;
-    const horasInput = document.getElementById('horas-uso').value;
-    const resultadoDiv = document.getElementById('resultado-pago');
+function procesarDevolucion(e) {
+    e.preventDefault(); 
 
-    const id = parseInt(idInput);
-    const horas = parseInt(horasInput);
+    const idInput = parseInt(document.getElementById('id-devolucion').value);
+    const horasInput = parseInt(document.getElementById('horas-uso').value);
 
-    let bici = bicicletas.find(b => b.id === id);
+    const biciParaDevolver = bicicletas.find(b => b.id === idInput);
 
-    if (!bici) {
-        alert("Bicicleta no encontrada. Revisa el ID.");
-        return;
-    }
+    if (biciParaDevolver && !biciParaDevolver.disponible && horasInput > 0) {  
+        const costoTotal = horasInput * PRECIO_HORA;
+        biciParaDevolver.disponible = true;
 
-    if (bici.disponible) {
-        alert("Esta bicicleta ya está en el taller (disponible).");
-        return;
-    }
+        historialVentas.push(costoTotal);
 
-    if (horas > 0) {
-        let total = horas * PRECIO_POR_HORA;
-        bici.disponible = true;
+        textoResultado.innerHTML = `¡Devolución exitosa! Total a cobrar: **$${costoTotal}**`;
+        textoResultado.classList.remove('hidden');
 
-        // Mostramos el resultado en el cuadro verde del HTML
-        resultadoDiv.classList.remove('hidden');
-        resultadoDiv.innerHTML = `Gracias por devolver la ${bici.modelo}. <br> Total a pagar: **$${total}**`;
-        
-        mostrarDisponibles(); // Refrescamos la interfaz
+        formulario.reset();
+        guardarEnStorage();
+        renderizarBicicletas();
     } else {
-        alert("Por favor, ingresa una cantidad de horas válida.");
+        textoResultado.innerHTML = "❌ Datos incorrectos o bicicleta no alquilada.";
+        textoResultado.classList.remove('hidden');
     }
 }
 
-// 5. Ejecución inicial al cargar la página
-document.addEventListener('DOMContentLoaded', mostrarDisponibles);
+// calcular ganancias
+function actualizarTotalRecaudado() {
+    const total = historialVentas.reduce((acumulador, actual) => acumulador + actual, 0);
+    displayIngresos.innerText = `$${total}`;
+}
+
+function guardarEnStorage() {
+    localStorage.setItem("bicicletas_storage", JSON.stringify(bicicletas));
+    localStorage.setItem("ventas_storage", JSON.stringify(historialVentas));
+}
+
+// 4. Evento de devolucion e inicio de la web
+formulario.addEventListener('submit', procesarDevolucion);
+
+btnReset.addEventListener('click', () => {
+    localStorage.clear();
+    location.reload();
+});
+
+
+document.addEventListener('DOMContentLoaded', renderizarBicicletas);
