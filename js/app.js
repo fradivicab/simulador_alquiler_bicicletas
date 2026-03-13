@@ -1,4 +1,4 @@
-// 1. CONSTANTES Y DATOS INICIALES
+// 1. CONFIGURACIÓN Y DATOS
 const PRECIO_HORA = 2000;
 
 const bicisIniciales = [
@@ -8,7 +8,7 @@ const bicisIniciales = [
     { id: 4, modelo: "Doble", disponible: true, img: "assets/img/bici-doble.webp" }
 ];
 
-// --- CLASE ALQUILER ---
+// --- CLASE PARA GESTIONAR CADA ALQUILER ---
 class Alquiler {
     constructor(cliente, ciudad, telefono, bicicleta, horas) {
         this.cliente = cliente;
@@ -16,31 +16,29 @@ class Alquiler {
         this.telefono = telefono;
         this.bicicleta = bicicleta;
         this.horas = horas;
-        this.total = this.calcularTotal();
+        this.totalEstimado = this.calcularPresupuesto();
     }
 
-    calcularTotal() {
+    calcularPresupuesto() {
         return this.horas * PRECIO_HORA;
     }
 
-    generarResumen() {
+    obtenerResumen() {
         return `
-            <strong>Resumen del Alquiler:</strong><br>
-            Cliente: ${this.cliente}<br>
-            Ciudad: ${this.ciudad}<br>
-            Contacto: ${this.telefono}<br>
-            Bicicleta: ${this.bicicleta.modelo}<br>
-            Horas estimadas: ${this.horas}<br>
-            Total estimado: $${this.total}
+            <strong>Datos del Cliente:</strong> ${this.cliente} (${this.ciudad})<br>
+            <strong>Contacto:</strong> ${this.telefono}<br>
+            <strong>Bici:</strong> ${this.bicicleta.modelo}<br>
+            <strong>Tiempo:</strong> ${this.horas} hs.<br>
+            <strong>Presupuesto inicial:</strong> $${this.totalEstimado}
         `;
     }
 }
 
-// 2. RECUPERAR DE LOCALSTORAGE
+// 2. PERSISTENCIA (LOCAL STORAGE)
 let bicicletas = JSON.parse(localStorage.getItem("bicicletas_storage")) || bicisIniciales;
 let historialVentas = JSON.parse(localStorage.getItem("ventas_storage")) || [];
 
-// 3. ELEMENTOS DEL DOM
+// 3. CAPTURA DE ELEMENTOS DEL DOM
 const contenedor = document.getElementById('contenedor-bicicletas');
 const displayIngresos = document.getElementById('total-ingresos');
 const btnReset = document.getElementById('btn-limpiar-storage');
@@ -48,239 +46,203 @@ const btnReset = document.getElementById('btn-limpiar-storage');
 const formAlquiler = document.getElementById('form-alquiler');
 const selectBicicleta = document.getElementById('select-bicicleta');
 const inputCliente = document.getElementById('cliente');
-const inputHoras = document.getElementById('horas');
 const inputCiudad = document.getElementById('ciudad');
 const inputTelefono = document.getElementById('telefono');
-inputTelefono.addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/[^0-9]/g, '');
-});
+const inputHoras = document.getElementById('horas');
+
 const resumenDiv = document.getElementById('resumen-alquiler');
 const btnConfirmar = document.getElementById('btn-confirmar');
+const contenedorAcciones = document.getElementById('acciones-confirmacion');
+const btnCancelar = document.getElementById('btn-cancelar');
+let alquilerEnCurso = null;
+const msjEstado = document.getElementById('msj-estado');
 
-let alquilerActual = null;
+// --- FUNCIONES DE LÓGICA ---
 
-// --- FUNCIONES ---
-// Renderizar catálogo de bicicletas
-function renderizarBicicletas() {
+// Mostramos las bicis usando las clases de nuestro CSS propio
+function dibujarCatalogo() {
     contenedor.innerHTML = "";
 
     bicicletas.forEach(bici => {
-        const claseBadge = bici.disponible ? 'disponible' : 'alquilada';
-        const textoEstado = bici.disponible ? 'Disponible' : 'Alquilada';
-        const claseBoton = bici.disponible ? 'btn-alquilar-activo' : 'btn-deshabilitado';
-        const textoBoton = bici.disponible ? 'Alquilar Ahora' : 'No Disponible';
+        const estadoClase = bici.disponible ? 'badge-disponible' : 'badge-alquilada';
+        const estadoTexto = bici.disponible ? 'Disponible' : 'Alquilada';
+        const botonClase = bici.disponible ? 'btn-activo' : 'btn-bloqueado';
 
-        const tarjeta = document.createElement('div');
-        tarjeta.className = "card-bici";
+        const card = document.createElement('div');
+        card.className = "card-bici";
 
-        tarjeta.innerHTML = `
-            <img src="${bici.img}" class="card-img">
+        card.innerHTML = `
+            <img src="${bici.img}" class="card-img" alt="${bici.modelo}">
             <div class="p-5">
-                <span class="badge ${claseBadge}">${textoEstado}</span>
+                <span class="badge ${estadoClase}">${estadoTexto}</span>
                 <h4 class="text-xl font-bold mt-2">${bici.modelo}</h4>
-                <p class="text-sm text-gray-500 mb-4">ID: #${bici.id}</p>
+                <p class="text-sm text-gray-400 mb-4">Código: #00${bici.id}</p>
                 <button 
-                    class="btn-base ${claseBoton} btn-alquilar" 
-                    data-id="${bici.id}" 
+                    class="btn-alquilar-main ${botonClase}" 
+                    onclick="prepararAlquiler(${bici.id})"
                     ${!bici.disponible ? 'disabled' : ''}>
-                    ${textoBoton}
+                    ${bici.disponible ? 'Alquilar Ahora' : 'No Disponible'}
                 </button>
             </div>
         `;
-        contenedor.appendChild(tarjeta);
-    });
-
-    asignarEventosBotones();
-    actualizarTotalRecaudado();
-}
-
-// Asignar click a botones de alquilar desde el catálogo
-function asignarEventosBotones() {
-    const botonesAlquilar = document.querySelectorAll('.btn-alquilar');
-    botonesAlquilar.forEach(boton => {
-        boton.addEventListener('click', e => {
-            const idSeleccionado = parseInt(e.target.getAttribute('data-id'));
-            selectBicicleta.value = idSeleccionado;
-            inputCliente.focus();
-            resumenDiv.classList.add('hidden');
-            btnConfirmar.classList.add('hidden');
-            window.scrollTo({
-                top: formAlquiler.offsetTop - 20,
-                behavior: 'smooth'
-            });
-        });
+        contenedor.appendChild(card);
     });
 }
 
-function alquilarBici(id) {
-    const bici = bicicletas.find(b => b.id === id);
-    if (bici && bici.disponible) {
-        bici.disponible = false;
-        guardarEnStorage();
-        renderizarBicicletas();
-        cargarSelect();
-        cargarSelectDevolucion();
-    }
+// Esta función se activa al hacer clic en el botón de una tarjeta
+function prepararAlquiler(id) {
+    selectBicicleta.value = id;
+    inputCliente.focus();
+    
+    // Scroll suave hasta el formulario
+    window.scrollTo({
+        top: formAlquiler.offsetTop - 80,
+        behavior: 'smooth'
+    });
 }
 
-// Actualizar select de alquiler
-function cargarSelect() {
-    selectBicicleta.innerHTML = '<option value="">-- Seleccionar --</option>';
-
-    bicicletas
-        .filter(bici => bici.disponible)
-        .forEach(bici => {
-            const option = document.createElement('option');
-            option.value = bici.id;
-            option.textContent = `${bici.modelo} (ID: ${bici.id})`;
-            selectBicicleta.appendChild(option);
-        });
+// Llenar el selector del formulario solo con bicis libres
+function actualizarSelectorAlquiler() {
+    selectBicicleta.innerHTML = '<option value="">-- Seleccionar Bicicleta --</option>';
+    bicicletas.filter(b => b.disponible).forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = `${b.modelo} (ID: ${b.id})`;
+        selectBicicleta.appendChild(opt);
+    });
 }
 
-// Manejar formulario de alquiler
-function manejarFormulario(e) {
+// --- MANEJO DE FORMULARIOS ---
+
+function procesarPresupuesto(e) {
     e.preventDefault();
 
-    const cliente = inputCliente.value.trim();
-    const ciudad = inputCiudad.value;
-    const telefono = inputTelefono.value.trim();
-    const horas = parseInt(inputHoras.value);
-    const idSeleccionado = parseInt(selectBicicleta.value);
-    const bicicleta = bicicletas.find(b => b.id === idSeleccionado);
+    const biciSeleccionada = bicicletas.find(b => b.id === parseInt(selectBicicleta.value));
+    
+    // Creamos la instancia de la clase Alquiler
+    alquilerEnCurso = new Alquiler(
+        inputCliente.value,
+        inputCiudad.value,
+        inputTelefono.value,
+        biciSeleccionada,
+        parseInt(inputHoras.value)
+    );
 
-    // Validación extra
-    if (!cliente || !ciudad || !telefono || !bicicleta || horas <= 0) {
-        alert("Por favor, completa todos los campos correctamente.");
-        return;
-    }
-
-    // Ahora pasamos todos los nuevos datos a la clase
-    alquilerActual = new Alquiler(cliente, ciudad, telefono, bicicleta, horas);
-
-    resumenDiv.innerHTML = alquilerActual.generarResumen();
+    resumenDiv.innerHTML = alquilerEnCurso.obtenerResumen();
     resumenDiv.classList.remove('hidden');
-    btnConfirmar.classList.remove('hidden');
+    //btnConfirmar.classList.remove('hidden');
+    contenedorAcciones.classList.remove('hidden');
 }
 
-// Confirmar alquiler
-function confirmarAlquiler() {
-    if (!alquilerActual) return;
+function finalizarConfirmacion() {
+    if (!alquilerEnCurso) return;
 
-    alquilerActual.bicicleta.disponible = false;
-    //historialVentas.push(alquilerActual.total);
+    // Cambiamos estado de la bici
+    alquilerEnCurso.bicicleta.disponible = false;
 
-    guardarEnStorage();
-    renderizarBicicletas();
-    cargarSelect();
-    cargarSelectDevolucion();
-    actualizarTotalRecaudado();
-
-    resumenDiv.classList.add('hidden');
-    btnConfirmar.classList.add('hidden');
+    // Guardar y refrescar
+    actualizarTodo();
+    
+    // Limpiar interfaz
     formAlquiler.reset();
-    alquilerActual = null;
+    resumenDiv.classList.add('hidden');
+    //btnConfirmar.classList.add('hidden');
+    contenedorAcciones.classList.add('hidden');
+    alquilerEnCurso = null;
 }
 
-// Actualizar total recaudado
-function actualizarTotalRecaudado() {
-    const total = historialVentas.reduce((acc, cur) => acc + cur, 0);
+// --- SECCIÓN DE DEVOLUCIÓN ---
+
+const selectDevolucion = document.getElementById('select-devolucion');
+const inputHorasFinales = document.getElementById('horas-devolucion');
+const avisoDevolucion = document.getElementById('resultado-devolucion');
+
+function actualizarSelectorDevolucion() {
+    if(!selectDevolucion) return; // Por si el form aún no se crea
+    selectDevolucion.innerHTML = '<option value="">-- Seleccionar Bici a Entregar --</option>';
+    bicicletas.filter(b => !b.disponible).forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = `${b.modelo} (ID: ${b.id})`;
+        selectDevolucion.appendChild(opt);
+    });
+}
+
+function gestionarDevolucion(e) {
+    e.preventDefault();
+
+    const id = parseInt(selectDevolucion.value);
+    const horas = parseInt(inputHorasFinales.value);
+    const bici = bicicletas.find(b => b.id === id);
+
+    if (bici) {
+        const cobroFinal = horas * PRECIO_HORA;
+        bici.disponible = true;
+        
+        // Aquí es donde el dinero entra REALMENTE al historial
+        historialVentas.push(cobroFinal);
+        
+        actualizarTodo();
+        
+        avisoDevolucion.innerHTML = `✅ Devolución Exitosa. Total cobrado: $${cobroFinal}`;
+        avisoDevolucion.classList.remove('hidden');
+        e.target.reset();
+    }
+}
+
+// --- UTILIDADES ---
+
+function actualizarTodo() {
+    localStorage.setItem("bicicletas_storage", JSON.stringify(bicicletas));
+    localStorage.setItem("ventas_storage", JSON.stringify(historialVentas));
+    
+    dibujarCatalogo();
+    actualizarSelectorAlquiler();
+    actualizarSelectorDevolucion();
+    
+    const total = historialVentas.reduce((acc, valor) => acc + valor, 0);
     displayIngresos.innerText = `$${total}`;
 }
 
-// Guardar datos en localStorage
-function guardarEnStorage() {
-    localStorage.setItem("bicicletas_storage", JSON.stringify(bicicletas));
-    localStorage.setItem("ventas_storage", JSON.stringify(historialVentas));
-}
-
-// --- DEVOLUCIÓN ---
-// Crear formulario de devolución dinámicamente
-const formDevolucion = document.createElement('form');
-formDevolucion.id = 'form-devolucion';
-formDevolucion.className = 'space-y-4 mt-8 p-6 bg-white rounded-xl shadow-md max-w-2xl mx-auto';
-
-formDevolucion.innerHTML = `
-    <h3 class="text-2xl font-bold mb-4 text-center">Devolver Bicicleta</h3>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Seleccionar Bicicleta Alquilada</label>
-        <select id="select-devolucion" class="w-full mt-1 p-3 border rounded-lg" required>
-            <option value="">-- Seleccionar --</option>
-        </select>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-gray-700">Cantidad de Horas Usadas</label>
-        <input type="number" id="horas-devolucion" min="1" class="w-full mt-1 p-3 border rounded-lg" required>
-    </div>
-
-    <button type="submit" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition">
-        Procesar Devolución
-    </button>
-
-    <div id="resultado-devolucion" class="mt-4 hidden p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-center font-semibold"></div>
-`;
-
-document.querySelector('main').appendChild(formDevolucion);
-
-const selectDevolucion = document.getElementById('select-devolucion');
-const inputHorasDevolucion = document.getElementById('horas-devolucion');
-const resultadoDevolucion = document.getElementById('resultado-devolucion');
-
-function cargarSelectDevolucion() {
-    selectDevolucion.innerHTML = '<option value="">-- Seleccionar --</option>';
-
-    bicicletas
-        .filter(bici => !bici.disponible)
-        .forEach(bici => {
-            const option = document.createElement('option');
-            option.value = bici.id;
-            option.textContent = `${bici.modelo} (ID: ${bici.id})`;
-            selectDevolucion.appendChild(option);
-        });
-}
-
-function procesarDevolucion(e) {
-    e.preventDefault();
-
-    const idBici = parseInt(selectDevolucion.value);
-    const horas = parseInt(inputHorasDevolucion.value);
-    const bici = bicicletas.find(b => b.id === idBici);
-
-    if (!bici || horas <= 0) {
-        resultadoDevolucion.textContent = '❌ Datos incorrectos.';
-        resultadoDevolucion.classList.remove('hidden');
-        return;
-    }
-
-    const total = horas * PRECIO_HORA;
-    bici.disponible = true;
-    historialVentas.push(total);
-
-    guardarEnStorage();
-    renderizarBicicletas();
-    cargarSelect();
-    cargarSelectDevolucion();
-    actualizarTotalRecaudado();
-
-    resultadoDevolucion.innerHTML = `✅ Devolución procesada. Total a cobrar: $${total}`;
-    resultadoDevolucion.classList.remove('hidden');
-
-    formDevolucion.reset();
-}
-
 // --- EVENTOS ---
-formAlquiler.addEventListener('submit', manejarFormulario);
-btnConfirmar.addEventListener('click', confirmarAlquiler);
-formDevolucion.addEventListener('submit', procesarDevolucion);
+
+formAlquiler.addEventListener('submit', procesarPresupuesto);
+btnConfirmar.addEventListener('click', finalizarConfirmacion);
+
+// El formulario de devolución se maneja si existe en el DOM
+document.addEventListener('submit', (e) => {
+    if (e.target.id === 'form-devolucion') gestionarDevolucion(e);
+});
+
+// Validación de teléfono (Solo números)
+inputTelefono.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+});
 
 btnReset.addEventListener('click', () => {
     localStorage.clear();
     location.reload();
 });
 
-// --- INICIALIZACIÓN ---
-renderizarBicicletas();
-cargarSelect();
-cargarSelectDevolucion();
-actualizarTotalRecaudado();
+// Cancelar alquiler
+btnCancelar.addEventListener('click', () => {
+    alquilerEnCurso = null;
+    formAlquiler.reset();
+    resumenDiv.classList.add('hidden');
+    contenedorAcciones.classList.add('hidden');    
+    
+    mostrarNotificacion("Reserva cancelada", "bg-gray-100", "text-gray-600");
+});
+
+// Función para mostrar mensajes temporales
+function mostrarNotificacion(mensaje, fondo, colorTexto) {
+    msjEstado.textContent = mensaje;
+    msjEstado.className = `mt-4 p-3 rounded-lg text-center font-medium ${fondo} ${colorTexto}`;
+    msjEstado.classList.remove('hidden');
+
+    setTimeout(() => {
+        msjEstado.classList.add('hidden');
+    }, 3000);
+}
+// --- INICIO DE LA APP ---
+actualizarTodo();
