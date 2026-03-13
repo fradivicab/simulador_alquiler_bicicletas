@@ -6,10 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BiciGuata - Alquiler de Bicicletas</title>
 
-    <!-- Usamos Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Fuentes -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -19,13 +17,11 @@
     </style>
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- Nuestro JS -->
     <script src="js/app.js" defer></script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Header -->
     <nav class="bg-white shadow-md p-4 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold text-indigo-600">BiciGuata</h1>
@@ -42,39 +38,51 @@
         </div>
     </header>
 
-    <!-- Main -->
     <main class="container mx-auto py-12 px-4">
 
-        <!-- Catálogo de bicicletas -->
         <section id="catalogo" class="mb-16">
             <h3 class="text-3xl font-bold text-gray-900 mb-8">Nuestras Bicicletas</h3>
             <div id="contenedor-bicicletas" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"></div>
         </section>
 
-        <!-- Formulario de alquiler -->
         <section id="alquiler" class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
             <h3 class="text-2xl font-bold mb-6 text-center">Alquilar Bicicleta</h3>
 
             <form id="form-alquiler" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
-                    <input type="text" id="cliente" class="w-full mt-1 p-3 border rounded-lg" required>
+                    <input type="text" id="cliente" placeholder="Ej: Juan Pérez" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" required>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Ciudad</label>
+                        <select id="ciudad" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" required>
+                            <option value="">-- Seleccionar --</option>
+                            <option value="Asunción">Asunción</option>
+                            <option value="San Lorenzo">San Lorenzo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Número de Contacto</label>
+                        <input type="text" id="telefono" placeholder="Ej: 0981123456" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" required>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Seleccionar Bicicleta</label>
-                    <select id="select-bicicleta" class="w-full mt-1 p-3 border rounded-lg" required>
+                    <select id="select-bicicleta" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" required>
                         <option value="">-- Seleccionar --</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Cantidad de Horas</label>
-                    <input type="number" id="horas" min="1" class="w-full mt-1 p-3 border rounded-lg" required>
+                    <label class="block text-sm font-medium text-gray-700">Cantidad de Horas Estimadas</label>
+                    <input type="number" id="horas" min="1" placeholder="Ej: 3" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" required>
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">
+                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg">
                     Calcular Alquiler
                 </button>
             </form>
@@ -83,14 +91,13 @@
                 class="mt-6 hidden p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800"></div>
 
             <button id="btn-confirmar"
-                class="hidden w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">
+                class="hidden w-full mt-4 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg">
                 Confirmar Alquiler
             </button>
         </section>
 
         <hr class="my-12">
 
-        <!-- Resumen de ingresos -->
         <section
             class="mb-12 bg-white p-6 rounded-xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
@@ -105,36 +112,31 @@
             </div>
         </section>
 
-        <!-- Próximamente -->
         <section class="container mx-auto py-12 px-4">
             <div class="bg-indigo-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
                 <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-indigo-500 rounded-full opacity-20"></div>
 
                 <div class="relative z-10">
                     <h3 class="text-3xl font-bold mb-2">Próximamente en BiciGuata 🚀</h3>
-                    <p class="text-indigo-200 mb-8">Estamos trabajando para mejorar tu experiencia. Muy pronto podrás
-                        disfrutar de:</p>
+                    <p class="text-indigo-200 mb-8">Estamos trabajando para mejorar tu experiencia. Muy pronto podrás disfrutar de:</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
                             <div class="text-2xl mb-3">📍</div>
                             <h4 class="font-bold mb-2">Multisector</h4>
-                            <p class="text-sm text-indigo-100">Nuevos puntos de entrega y devolución en toda la ciudad
-                                para mayor comodidad.</p>
+                            <p class="text-sm text-indigo-100">Nuevos puntos de entrega y devolución en toda la ciudad.</p>
                         </div>
 
                         <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
                             <div class="text-2xl mb-3">📋</div>
                             <h4 class="font-bold mb-2">Registro de Usuario</h4>
-                            <p class="text-sm text-indigo-100">Formulario inteligente para validación de identidad de
-                                los usuarios.</p>
+                            <p class="text-sm text-indigo-100">Validación de identidad inteligente.</p>
                         </div>
 
                         <div class="bg-white/10 backdrop-blur-md p-6 rounded-xl border border-white/20">
                             <div class="text-2xl mb-3">⭐</div>
                             <h4 class="font-bold mb-2">Sistema de Puntos</h4>
-                            <p class="text-sm text-indigo-100">Gana "BiciPuntos" por cada kilómetro recorrido y
-                                canjéalos por horas gratis.</p>
+                            <p class="text-sm text-indigo-100">Gana "BiciPuntos" por cada kilómetro recorrido.</p>
                         </div>
                     </div>
                 </div>
@@ -143,11 +145,9 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="bg-gray-900 text-gray-400 py-8 text-center mt-12">
         <p>&copy; 2026 BiciGuata Simulator. Proyecto de FranciscoDDV JS.</p>
     </footer>
 
 </body>
-
 </html>

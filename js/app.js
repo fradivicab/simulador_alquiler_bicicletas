@@ -10,8 +10,10 @@ const bicisIniciales = [
 
 // --- CLASE ALQUILER ---
 class Alquiler {
-    constructor(cliente, bicicleta, horas) {
+    constructor(cliente, ciudad, telefono, bicicleta, horas) {
         this.cliente = cliente;
+        this.ciudad = ciudad;
+        this.telefono = telefono;
         this.bicicleta = bicicleta;
         this.horas = horas;
         this.total = this.calcularTotal();
@@ -23,10 +25,13 @@ class Alquiler {
 
     generarResumen() {
         return `
+            <strong>Resumen del Alquiler:</strong><br>
             Cliente: ${this.cliente}<br>
+            Ciudad: ${this.ciudad}<br>
+            Contacto: ${this.telefono}<br>
             Bicicleta: ${this.bicicleta.modelo}<br>
-            Horas: ${this.horas}<br>
-            Total: $${this.total}
+            Horas estimadas: ${this.horas}<br>
+            Total estimado: $${this.total}
         `;
     }
 }
@@ -44,6 +49,11 @@ const formAlquiler = document.getElementById('form-alquiler');
 const selectBicicleta = document.getElementById('select-bicicleta');
 const inputCliente = document.getElementById('cliente');
 const inputHoras = document.getElementById('horas');
+const inputCiudad = document.getElementById('ciudad');
+const inputTelefono = document.getElementById('telefono');
+inputTelefono.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+});
 const resumenDiv = document.getElementById('resumen-alquiler');
 const btnConfirmar = document.getElementById('btn-confirmar');
 
@@ -132,13 +142,20 @@ function manejarFormulario(e) {
     e.preventDefault();
 
     const cliente = inputCliente.value.trim();
+    const ciudad = inputCiudad.value;
+    const telefono = inputTelefono.value.trim();
     const horas = parseInt(inputHoras.value);
     const idSeleccionado = parseInt(selectBicicleta.value);
     const bicicleta = bicicletas.find(b => b.id === idSeleccionado);
 
-    if (!cliente || !bicicleta || horas <= 0) return;
+    // Validación extra
+    if (!cliente || !ciudad || !telefono || !bicicleta || horas <= 0) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+    }
 
-    alquilerActual = new Alquiler(cliente, bicicleta, horas);
+    // Ahora pasamos todos los nuevos datos a la clase
+    alquilerActual = new Alquiler(cliente, ciudad, telefono, bicicleta, horas);
 
     resumenDiv.innerHTML = alquilerActual.generarResumen();
     resumenDiv.classList.remove('hidden');
@@ -150,7 +167,7 @@ function confirmarAlquiler() {
     if (!alquilerActual) return;
 
     alquilerActual.bicicleta.disponible = false;
-    historialVentas.push(alquilerActual.total);
+    //historialVentas.push(alquilerActual.total);
 
     guardarEnStorage();
     renderizarBicicletas();
